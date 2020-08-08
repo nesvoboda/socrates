@@ -40,6 +40,8 @@ It will print a nice average for you if you pass the test.
 If your CPU is loaded, your philosophers can die for no reason. The CPU will just get stuck on a task and forget to return to your starving philosophers in time.
 So Socrates checks your CPU load constantly and will tell you if the test results can be wrong because of insufficient processing resources.
 
+Here's an [article](https://www.notion.so/philosophers-VM-c60be9c836084edfbcd9c07e29b429c4) that explains why this is important, especially on a VM.
+
 ![A screenshot showing the test output with a message: CPU OVERLOADED! RESULTS MAY BE WRONG](https://i.imgur.com/Nj7Jiey.png)
 
 ## Installation
