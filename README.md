@@ -28,7 +28,14 @@ If your delay is more than 10ms, the test is failed!
 
 It will print a nice average for you if you pass the test.
 
-![Example](https://i.imgur.com/oJ43M1f.png)
+![A screenshot showing a typical test output](https://i.imgur.com/oJ43M1f.png)
+
+### CPU load detector
+
+If your CPU is loaded, your philosophers can die for no reason. The CPU will just get stuck on a task and forget to return to your starving philosophers in time.
+So Socrates checks your CPU load constantly and will tell you if the test results can be wrong because of insufficient processing resources.
+
+![A screenshot showing the test output with a message: CPU OVERLOADED! RESULTS MAY BE WRONG](https://i.imgur.com/Nj7Jiey.png)
 
 ## Installation
 
@@ -44,6 +51,12 @@ cd socrates
 
 ```
 pip3 install psutil
+```
+
+If you're in a 42 campus, run this instead:
+
+```
+python3 -m pip install psutil -user
 ```
 
 ## Configuration
