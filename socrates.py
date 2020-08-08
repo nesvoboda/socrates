@@ -66,7 +66,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         # Exit immediately, if the process has died
         if code is not None:
             f.close()
-            terminate_three(binary)
+            # terminate_three(binary)
             return False
 
     code = process.poll()
@@ -79,7 +79,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         return True
     # If the process isn't running anymore, the test has failed
     f.close()
-    terminate_three(binary)
+    # terminate_three(binary)
     return False
 
 
