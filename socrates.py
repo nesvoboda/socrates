@@ -10,14 +10,24 @@ import psutil
 
 # How many 'long' tests are needed
 N_LONG_TESTS = 3
+
 # How many seconds must a program run uninterrupted
 LONG_TEST_LENGTH = 40
 
+# The test that will be used for an even number of philosophers
+EVEN_NUMBER_TEST = '8 311 150 150'
+
+# The test that will be used for and odd number of philosophers
+ODD_NUMBER_TEST = '7 600 150 150'
+
+# The test that will be used for the death timing tests
+DEATH_TIMING_TEST = '3 310 200 100'
+
+N_DEATH_TIMING_TESTS = 10
 
 CPU_COUNT = psutil.cpu_count()
 
-# array = []
-
+FAIL = 0
 
 class bcolors:
     HEADER = "\033[95m"
@@ -38,11 +48,6 @@ def cpu_overloaded():
         return True
     if psutil.getloadavg()[1] / CPU_COUNT > 1:
         return True
-
-
-def terminate_three(binary):
-    if "philo_three" in binary:
-        subprocess.run(["killall", "philo_three"])
 
 
 def assert_runs_for_at_least(command, seconds, binary, test_name):
@@ -66,7 +71,6 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         # Exit immediately, if the process has died
         if code is not None:
             f.close()
-            # terminate_three(binary)
             return False
 
     code = process.poll()
@@ -75,66 +79,62 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         process.kill()
         f.close()
         print(f"{bcolors.OKGREEN}[{seconds} SEC] {bcolors.ENDC}", end="", flush=True)
-        terminate_three(binary)
         return True
     # If the process isn't running anymore, the test has failed
     f.close()
-    # terminate_three(binary)
     return False
 
 
 def measure_starvation_timing(binary, array):
     # Run a philosopher binary with deadly parameters
-    data = subprocess.getoutput(f"{binary} 3 310 200 100")
-
+    print(f"Running {binary} {DEATH_TIMING_TEST}")
+    data = subprocess.getoutput(f"{binary} {DEATH_TIMING_TEST}")
+    print(f"ran {binary} {DEATH_TIMING_TEST}")
     # Get the time of death
     last_line = data[data.rfind("\n") + 1 :]
     death_time = int(last_line[: last_line.find(" ")])
     result = death_time - 310
     # Append the delay to the array of results
     array.append(result)
-    terminate_three(binary)
 
 
 def run_long_test(binary, test, test_name):
+    global FAIL
     for i in range(0, N_LONG_TESTS):
         res = assert_runs_for_at_least(
             f"{binary} {test}", LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
         )
         if res is False:
             print(f"\n\n ❌ {binary} failed test {test}")
+            FAIL = 1
             return False
     print(f"\n\n✅  Pass!\n")
     return True
 
 
 def run_starvation_measures(binary):
+    global FAIL
     results = []
-    for i in range(10):
+    for i in range(N_DEATH_TIMING_TESTS):
         measure_starvation_timing(binary, results)
         if results[-1] > 10:
             print(f"\n\n ❌ {binary} failed death timing test :(")
+            FAIL = 1
             return False
         else:
-            print(f"{bcolors.OKGREEN}[{results[-1]} MS] " f"{bcolors.ENDC}", end="")
-    print(f"\n\n✅  Average delay: {mean(results)} ms!\n\n")
+            print(f"{bcolors.OKGREEN}[{results[-1]} MS] " f"{bcolors.ENDC}", end="", flush=True)
+    if N_DEATH_TIMING_TESTS > 0:
+        print(f"\n\n✅  Average delay: {mean(results)} ms!\n\n")
     return True
 
 
 def test_program(binary):
     print(f"\n{bcolors.BOLD}PERFORMANCE{bcolors.ENDC}\n")
-    is_three = "philo_three" in binary
-    if is_three:
-        print(
-            f"{bcolors.WARNING}WARNING: for philo_three, we will have to run\n"
-            "'killall philo_three' after each run. It may stop other running\n"
-            f"instances of this program.{bcolors.ENDC}"
-        )
-    print(f"{bcolors.WARNING}4 410 200 200{bcolors.ENDC}     ", end="", flush=True)
-    if run_long_test(binary, "4 410 200 200", "performance_1") is False:
+    print(f"{bcolors.WARNING}{EVEN_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
+    if run_long_test(binary, EVEN_NUMBER_TEST, "performance_1") is False:
         return False
     print(f"{bcolors.WARNING}5 800 200 200{bcolors.ENDC}     ", end="", flush=True)
-    if run_long_test(binary, "5 800 200 200", "performance_2") is False:
+    if run_long_test(binary, ODD_NUMBER_TEST, "performance_2") is False:
         return False
     print(f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n")
     if run_starvation_measures(binary) is False:
@@ -157,13 +157,15 @@ def make_all_binaries(bin_path):
     subprocess.run(["make", "-C", f"{bin_path}/philo_three/"])
 
 
-if __name__ == "__main__":
-    argc = len(sys.argv)
-    if argc > 1 and argc < 3:
-        bin_path = sys.argv[1]
-    elif argc > 3 or argc == 1:
-        print(f"Usage: {sys.argv[0]} <path to project folder>")
-        exit(1)
+def socrates(bin_path, test_mode=None, no_death_timing=None):
+    global N_DEATH_TIMING_TESTS
+    global LONG_TEST_LENGTH
+
+    if test_mode:
+        LONG_TEST_LENGTH = 1
+        N_DEATH_TIMING_TESTS = 1
+    if no_death_timing:
+        N_DEATH_TIMING_TESTS = 0
 
     print(f"\n{bcolors.OKBLUE}-- MAKING BINARIES ---{bcolors.ENDC} \n")
     make_all_binaries(bin_path)
@@ -198,3 +200,18 @@ if __name__ == "__main__":
     test_program(f"{bin_path}/philo_two/philo_two")
     print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
     test_program(f"{bin_path}/philo_three/philo_three")
+    if FAIL == 1:
+        return(1)
+    else:
+        return(0)
+
+
+
+if __name__ == "__main__":
+    argc = len(sys.argv)
+    if argc > 1 and argc < 3:
+        bin_path = sys.argv[1]
+    elif argc > 3 or argc == 1:
+        print(f"Usage: {sys.argv[0]} <path to project folder>")
+        exit(1)
+    exit(socrates(bin_path))
