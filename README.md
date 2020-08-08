@@ -2,7 +2,12 @@
 ![Logo](https://i.imgur.com/JyKRlbd.png)
 
 # socrates
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+
 A small testing framework for 42's philosophers.
+
+_Big thanks to [solaldunckel](https://github.com/solaldunckel) for helping to test this project!_
 
 ## Description
 
