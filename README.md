@@ -11,10 +11,13 @@ _Big thanks to [solaldunckel](https://github.com/solaldunckel) for helping to te
 
 ## Description
 
-Testing philosophers is a tedious task. You have to run the binaries a lot of time.
+Testing philosophers is a tedious task. You have to run the binaries over and over, countless times!
 
-In some tests, philosopher shouldn't die for a long time.
-Also, you should print out philosopher deaths in no more than 10ms.
+![A funny gif](https://media.giphy.com/media/PvvSfSDFoAL5e/giphy.gif)
+
+In general, there are two goals in testing philosophers:
+* Program runs for a long time, philosophers don't die when they should live,
+* If philosophers die, their death should be shown in less than 10ms.
 
 Socrates checks these two requrements for you!
 
@@ -22,12 +25,13 @@ Socrates checks these two requrements for you!
 
 It provides two series of tests: PERFORMANCE and DEATH TIMING.
 
-In a PERFORMANCE test, a binary is launched with a long-living test, and then the script times its execution.
-In this tests, philosophers must not die by problem condition.
-If the binary exits prematurely (sooner than 40s by default) the test is failed.
+A PERFORMANCE test is a stable test. By its conditions, no philosophers should die.
+So this script times the execution of your binary.
 
-In a DEATH TIMING test, a binary is launched with a test, in which a philosopher must die instantly. The program output
-is then parsed to measure the delay.
+If it exits prematurely (sooner than 40s by default) the test is failed.
+
+In a DEATH TIMING test, a philosopher must die instantly. The program output
+is then parsed to measure how soon your program reported that.
 
 If your delay is more than 10ms, the test is failed!
 
@@ -39,6 +43,8 @@ It will print a nice average for you if you pass the test.
 
 If your CPU is loaded, your philosophers can die for no reason. The CPU will just get stuck on a task and forget to return to your starving philosophers in time.
 So Socrates checks your CPU load constantly and will tell you if the test results can be wrong because of insufficient processing resources.
+
+Here's an [article](https://www.notion.so/philosophers-VM-c60be9c836084edfbcd9c07e29b429c4) that explains why this is important, especially on a VM.
 
 ![A screenshot showing the test output with a message: CPU OVERLOADED! RESULTS MAY BE WRONG](https://i.imgur.com/Nj7Jiey.png)
 
