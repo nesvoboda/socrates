@@ -5,7 +5,7 @@ from time import sleep
 from statistics import mean
 import threading
 from pathlib import Path
-
+import re
 import psutil
 
 # How many 'long' tests are needed
@@ -15,19 +15,28 @@ N_LONG_TESTS = 3
 LONG_TEST_LENGTH = 40
 
 # The test that will be used for an even number of philosophers
-EVEN_NUMBER_TEST = '8 311 150 150'
+EVEN_NUMBER_TEST = "8 311 150 150"
 
 # The test that will be used for and odd number of philosophers
-ODD_NUMBER_TEST = '7 600 150 150'
+ODD_NUMBER_TEST = "7 600 150 150"
 
 # The test that will be used for the death timing tests
-DEATH_TIMING_TEST = '3 310 200 100'
+DEATH_TIMING_TEST = "3 310 200 100"
 
 N_DEATH_TIMING_TESTS = 10
+
+# The regexp that matches the character that separates your
+# timestamp from your status messages. This is needed to parse your death timing.
+# The default is "any whitespace", which will match both
+# 000000310\t1 died
+# and
+# 000000310 1 died
+SEPARATOR_REGEXP = r"\s"
 
 CPU_COUNT = psutil.cpu_count()
 
 FAIL = 0
+
 
 class bcolors:
     HEADER = "\033[95m"
@@ -87,13 +96,19 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
 
 def measure_starvation_timing(binary, array):
     # Run a philosopher binary with deadly parameters
-    print(f"Running {binary} {DEATH_TIMING_TEST}")
     data = subprocess.getoutput(f"{binary} {DEATH_TIMING_TEST}")
-    print(f"ran {binary} {DEATH_TIMING_TEST}")
+    pattern = re.compile(SEPARATOR_REGEXP)
+    # Get the start time
+    first_line = data[: data.find("\n")]
+    separator_index = pattern.search(first_line).start()
+    start_time = int(first_line[:separator_index])
+
     # Get the time of death
     last_line = data[data.rfind("\n") + 1 :]
-    death_time = int(last_line[: last_line.find(" ")])
-    result = death_time - 310
+
+    separator_index = pattern.search(last_line).start()
+    death_time = int(last_line[:separator_index])
+    result = death_time - start_time - 310
     # Append the delay to the array of results
     array.append(result)
 
@@ -122,7 +137,11 @@ def run_starvation_measures(binary):
             FAIL = 1
             return False
         else:
-            print(f"{bcolors.OKGREEN}[{results[-1]} MS] " f"{bcolors.ENDC}", end="", flush=True)
+            print(
+                f"{bcolors.OKGREEN}[{results[-1]} MS] " f"{bcolors.ENDC}",
+                end="",
+                flush=True,
+            )
     if N_DEATH_TIMING_TESTS > 0:
         print(f"\n\n✅  Average delay: {mean(results)} ms!\n\n")
     return True
@@ -133,7 +152,7 @@ def test_program(binary):
     print(f"{bcolors.WARNING}{EVEN_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
     if run_long_test(binary, EVEN_NUMBER_TEST, "performance_1") is False:
         return False
-    print(f"{bcolors.WARNING}5 800 200 200{bcolors.ENDC}     ", end="", flush=True)
+    print(f"{bcolors.WARNING}{ODD_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
     if run_long_test(binary, ODD_NUMBER_TEST, "performance_2") is False:
         return False
     print(f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n")
@@ -201,10 +220,9 @@ def socrates(bin_path, test_mode=None, no_death_timing=None):
     print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
     test_program(f"{bin_path}/philo_three/philo_three")
     if FAIL == 1:
-        return(1)
+        return 1
     else:
-        return(0)
-
+        return 0
 
 
 if __name__ == "__main__":
