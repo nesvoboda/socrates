@@ -7,6 +7,7 @@ import threading
 from pathlib import Path
 import re
 import psutil
+import signal
 
 # How many 'long' tests are needed
 N_LONG_TESTS = 3
@@ -15,10 +16,10 @@ N_LONG_TESTS = 3
 LONG_TEST_LENGTH = 40
 
 # The test that will be used for an even number of philosophers
-EVEN_NUMBER_TEST = "8 311 150 150"
+EVEN_NUMBER_TEST = "4 311 150 150"
 
 # The test that will be used for and odd number of philosophers
-ODD_NUMBER_TEST = "7 600 150 150"
+ODD_NUMBER_TEST = "5 600 150 150"
 
 # The test that will be used for the death timing tests
 DEATH_TIMING_TEST = "3 310 200 100"
@@ -59,6 +60,20 @@ def cpu_overloaded():
         return True
 
 
+# This function will try to detect if your binary is still running
+# (this sometimes happens with philo_three)
+def processes_still_running(binary):
+    try:
+        executable = binary[binary.rfind("/") + 1 :]
+    except Exception:
+        executable = binary
+    procs = psutil.process_iter(["name", "status", "pid"])
+    for proc in procs:
+        if proc.info["name"] == executable and proc.info["status"] == "running":
+            proc.terminate()
+            proc.wait()
+
+
 def assert_runs_for_at_least(command, seconds, binary, test_name):
     # Run a given command
     f = open(f"./test_output/{binary[binary.rfind('/'):]}_{test_name}_out.txt", "w")
@@ -86,6 +101,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
     if code is None:
         # If the process is still running, the test has passed
         process.kill()
+        process.poll()
         f.close()
         print(f"{bcolors.OKGREEN}[{seconds} SEC] {bcolors.ENDC}", end="", flush=True)
         return True
@@ -119,6 +135,7 @@ def run_long_test(binary, test, test_name):
         res = assert_runs_for_at_least(
             f"{binary} {test}", LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
         )
+        processes_still_running(binary)
         if res is False:
             print(f"\n\n ❌ {binary} failed test {test}")
             FAIL = 1
@@ -132,6 +149,7 @@ def run_starvation_measures(binary):
     results = []
     for i in range(N_DEATH_TIMING_TESTS):
         measure_starvation_timing(binary, results)
+        processes_still_running(binary)
         if results[-1] > 10:
             print(f"\n\n ❌ {binary} failed death timing test :(")
             FAIL = 1
