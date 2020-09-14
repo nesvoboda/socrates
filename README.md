@@ -19,7 +19,7 @@ In general, there are two goals in testing philosophers:
 * Program runs for a long time, philosophers don't die when they should live,
 * If philosophers die, their death should be shown in less than 10ms.
 
-Socrates checks these two requrements for you!
+Socrates checks these two requirements for you!
 
 ### What is inside?
 
