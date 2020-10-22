@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import psutil
 import signal
+from delay_o_meter import measure
 
 # How many 'long' tests are needed
 N_LONG_TESTS = 3
@@ -23,6 +24,9 @@ ODD_NUMBER_TEST = "5 600 150 150"
 
 # The test that will be used for the death timing tests
 DEATH_TIMING_TEST = "3 310 200 100"
+
+# The death timing target (a philosopher should ideally die at this moment)
+DEATH_TIMING_OPTIMUM = 310
 
 N_DEATH_TIMING_TESTS = 10
 
@@ -113,9 +117,12 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
 def measure_starvation_timing(binary, array):
     # Run a philosopher binary with deadly parameters
     data = subprocess.getoutput(f"{binary} {DEATH_TIMING_TEST}")
+    if data[-1] == "\0":
+        data = data[:-2]
     pattern = re.compile(SEPARATOR_REGEXP)
     # Get the start time
     first_line = data[: data.find("\n")]
+
     separator_index = pattern.search(first_line).start()
     start_time = int(first_line[:separator_index])
 
@@ -123,8 +130,8 @@ def measure_starvation_timing(binary, array):
     last_line = data[data.rfind("\n") + 1 :]
 
     separator_index = pattern.search(last_line).start()
-    death_time = int(last_line[:separator_index])
-    result = death_time - start_time - 310
+    death_time = int(last_line[:separator_index].strip("\0"))
+    result = abs(death_time - start_time - DEATH_TIMING_OPTIMUM)
     # Append the delay to the array of results
     array.append(result)
 
@@ -179,12 +186,12 @@ def test_program(binary):
     return True
 
 
-def cpu_waning():
+def cpu_warning():
     if cpu_overloaded():
         print(
             f"{bcolors.FAIL}WARNING! The CPU usage is {psutil.cpu_percent()}"
             f", 5-minute load average is {psutil.getloadavg}.\n"
-            f"The test results may be wrong! {bcolors.endc}"
+            f"The test results may be wrong! {bcolors.ENDC}"
         )
 
 
@@ -194,19 +201,7 @@ def make_all_binaries(bin_path):
     subprocess.run(["make", "-C", f"{bin_path}/philo_three/"])
 
 
-def socrates(bin_path, test_mode=None, no_death_timing=None):
-    global N_DEATH_TIMING_TESTS
-    global LONG_TEST_LENGTH
-
-    if test_mode:
-        LONG_TEST_LENGTH = 1
-        N_DEATH_TIMING_TESTS = 1
-    if no_death_timing:
-        N_DEATH_TIMING_TESTS = 0
-
-    print(f"\n{bcolors.OKBLUE}-- MAKING BINARIES ---{bcolors.ENDC} \n")
-    make_all_binaries(bin_path)
-    print(f"\n{bcolors.OKBLUE}--- TEST DESCRIPTION ---{bcolors.ENDC}")
+def print_test_description():
     print(
         f"\n{bcolors.BOLD}PERFORMANCE.{bcolors.ENDC}\n\n"
         "In these tests, philosophers must not die.\n"
@@ -230,13 +225,57 @@ def socrates(bin_path, test_mode=None, no_death_timing=None):
         "PASSING THIS TEST != A GOOD ONE\n"
         f"MAKE YOUR OWN DECISIONS{bcolors.ENDC}\n"
     )
+
+
+def measure_system_delay():
+    avgs = []
+
+    print("Measuring system delay", end="", flush=True)
+    for i in range(0, 20):
+        print(".", end="", flush=True)
+        avgs.append(measure())
+    print("\n")
+
+    print(
+        f"For 200ms of usleep this machine adds {mean(avgs):.3f}ms of delay on average"
+    )
+    print(f"Peak delay: {max(avgs):.3f}ms")
+    if mean(avgs) > 2:
+        print(
+            f"{bcolors.WARNING}Please note that a significant delay may impact the performance of philosophers.{bcolors.ENDC}"
+        )
+        sleep(5)
+
+
+def socrates(bin_path, test_mode=None, no_death_timing=None):
+    global N_DEATH_TIMING_TESTS
+    global LONG_TEST_LENGTH
+
+    if test_mode:
+        LONG_TEST_LENGTH = 1
+        N_DEATH_TIMING_TESTS = 1
+    if no_death_timing:
+        N_DEATH_TIMING_TESTS = 0
+
+    print(f"\n{bcolors.OKBLUE}-- DELAY-O-METER ---{bcolors.ENDC} \n")
+    measure_system_delay()
+    cpu_warning()
+    print(f"\n{bcolors.OKBLUE}-- MAKING BINARIES ---{bcolors.ENDC} \n")
+    make_all_binaries(bin_path)
+    print(f"\n{bcolors.OKBLUE}--- TEST DESCRIPTION ---{bcolors.ENDC}")
+
+    print_test_description()
     Path("./test_output/").mkdir(parents=True, exist_ok=True)
-    print(f"\n{bcolors.OKBLUE}---------- PHILO_ONE ----------{bcolors.ENDC}\n")
-    test_program(f"{bin_path}/philo_one/philo_one")
-    print(f"\n{bcolors.OKBLUE}---------- PHILO_TWO ----------{bcolors.ENDC}\n")
-    test_program(f"{bin_path}/philo_two/philo_two")
-    print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
-    test_program(f"{bin_path}/philo_three/philo_three")
+
+    if os.path.isfile(f"{bin_path}/philo_one/philo_one"):
+        print(f"\n{bcolors.OKBLUE}---------- PHILO_ONE ----------{bcolors.ENDC}\n")
+        test_program(f"{bin_path}/philo_one/philo_one")
+    if os.path.isfile(f"{bin_path}/philo_two/philo_two"):
+        print(f"\n{bcolors.OKBLUE}---------- PHILO_TWO ----------{bcolors.ENDC}\n")
+        test_program(f"{bin_path}/philo_two/philo_two")
+    if os.path.isfile(f"{bin_path}/philo_three/philo_three"):
+        print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
+        test_program(f"{bin_path}/philo_three/philo_three")
     if FAIL == 1:
         return 1
     else:
