@@ -7,41 +7,27 @@
 
 A small testing framework for 42's philosophers.
 
+**New**: now includes Delay-o-meter, a tool to measure sleep inaccuracy
+
 _Big thanks to [solaldunckel](https://github.com/solaldunckel) for helping to test this project!_
-
-## Description
-
-Testing philosophers is a tedious task. You have to run the binaries over and over, countless times!
-
-![A funny gif](https://media.giphy.com/media/PvvSfSDFoAL5e/giphy.gif)
-
-In general, there are two goals in testing philosophers:
-* Program runs for a long time, philosophers don't die when they should live,
-* If philosophers die, their death should be shown in less than 10ms.
-
-Socrates checks these two requirements for you!
 
 ### What are the tests?
 
-It provides two series of tests: PERFORMANCE and DEATH TIMING.
+Socrates tests two things.
 
-A PERFORMANCE test is a stable test. By its conditions, no philosophers should die.
-Socrates times the execution of your binary.
+In _**PERFORMANCE**_ tests, it times how long your program runs in a test case where
+no philosophers should die (like 550 210 210). By default, your program should hold on for 40 seconds.
 
-If it exits prematurely (sooner than 40s by default) the test is failed.
-
-In a DEATH TIMING test, a philosopher must die at a known time. The program output
-is then parsed to measure how soon your program reported that.
+In a _**DEATH TIMING**_ test, we make a philosopher die (sorry!) (example: 100 500 500, a philosopher will die at 100ms).
+The output of your program is then parsed to measure how soon your program reported that.
 
 If your delay is more than 10ms, the test is failed!
-
-It will print a nice average for you if you pass the test.
 
 ![A screenshot showing a typical test output](https://i.imgur.com/oJ43M1f.png)
 
 ### Delay-o-meter
 
-Different machines perform sleeps with different accuracy. Socrates reports the average delay the machine will add to a 200-millisecond sleep.
+Different machines perform sleeps with different accuracy. Socrates reports the average delay the machine will add to a 200-millisecond sleep. This can help make sure other stuff running on the computer doesn't interfere with Philosopher timings.
 
 You can also use a standalone tool and check different machines:
 ```
@@ -56,8 +42,7 @@ The common-sense standard of a good Philosophers is less than 10ms of delay per 
 
 ### CPU load detector
 
-If your CPU is loaded, your philosophers can die for no reason. The CPU will just get stuck on a task and forget to return to your starving philosophers in time.
-So Socrates checks your CPU load constantly and will tell you if the test results can be wrong because of insufficient processing resources.
+Another way of making sure nothing prevents your philosophers from working properly, Socrates checks the load of your CPU. If it's overloaded, it will show a message.
 
 Here's an [article](https://www.notion.so/philosophers-VM-c60be9c836084edfbcd9c07e29b429c4) that explains why this is important, especially on a VM.
 
