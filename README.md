@@ -67,7 +67,7 @@ pip3 install psutil
 If you're in a 42 campus, run this instead:
 
 ```
-python3 -m pip install psutil -user
+python3 -m pip install psutil --user
 ```
 
 ## Configuration
