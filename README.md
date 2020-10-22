@@ -21,16 +21,16 @@ In general, there are two goals in testing philosophers:
 
 Socrates checks these two requirements for you!
 
-### What is inside?
+### What are the tests?
 
 It provides two series of tests: PERFORMANCE and DEATH TIMING.
 
 A PERFORMANCE test is a stable test. By its conditions, no philosophers should die.
-So this script times the execution of your binary.
+Socrates times the execution of your binary.
 
 If it exits prematurely (sooner than 40s by default) the test is failed.
 
-In a DEATH TIMING test, a philosopher must die instantly. The program output
+In a DEATH TIMING test, a philosopher must die at a known time. The program output
 is then parsed to measure how soon your program reported that.
 
 If your delay is more than 10ms, the test is failed!
@@ -38,6 +38,21 @@ If your delay is more than 10ms, the test is failed!
 It will print a nice average for you if you pass the test.
 
 ![A screenshot showing a typical test output](https://i.imgur.com/oJ43M1f.png)
+
+### Delay-o-meter
+
+Different machines perform sleeps with different accuracy. Socrates reports the average delay the machine will add to a 200-millisecond sleep.
+
+You can also use a standalone tool and check different machines:
+```
+python3 delay_o_meter.py
+```
+
+#### How to interpret the result?
+
+The common-sense standard of a good Philosophers is less than 10ms of delay per one eat-sleep-think cycle (example: 310 150 150 should run forever).
+
+**My personal opinion** is that, therefore, a machine must lose less than **3ms on average** for tests to be accurate. Let me know what you think about that!
 
 ### CPU load detector
 
