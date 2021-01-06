@@ -11,6 +11,7 @@ import threading
 from pathlib import Path
 import re
 import psutil
+from tqdm import tqdm
 import signal
 from delay_o_meter import measure
 
@@ -90,7 +91,9 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
     # Wait for some time
     code = process.poll()
     slept = 0
-    while slept < seconds:
+    for _ in tqdm(range(seconds)):
+        if not slept < seconds:
+            break
         sleep(1)
         slept += 1
         if not cpu_warning_issued and cpu_overloaded():
@@ -111,7 +114,6 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         process.kill()
         process.poll()
         f.close()
-        print(f"{bcolors.OKGREEN}[{seconds} SEC] {bcolors.ENDC}", end="", flush=True)
         return True
     # If the process isn't running anymore, the test has failed
     f.close()
@@ -178,10 +180,10 @@ def run_starvation_measures(binary):
 
 def test_program(binary):
     print(f"\n{bcolors.BOLD}PERFORMANCE{bcolors.ENDC}\n")
-    print(f"{bcolors.WARNING}{EVEN_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
+    print(f"{bcolors.WARNING}{EVEN_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
     if run_long_test(binary, EVEN_NUMBER_TEST, "performance_1") is False:
         return False
-    print(f"{bcolors.WARNING}{ODD_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
+    print(f"{bcolors.WARNING}{ODD_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
     if run_long_test(binary, ODD_NUMBER_TEST, "performance_2") is False:
         return False
     print(f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n")
