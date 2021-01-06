@@ -1,6 +1,10 @@
+#!/usr/bin/env python3
+
 import sys
 import os
 import subprocess
+import argparse
+import textwrap
 from time import sleep
 from statistics import mean
 import threading
@@ -247,7 +251,7 @@ def measure_system_delay():
         sleep(5)
 
 
-def socrates(bin_path, test_mode=None, no_death_timing=None):
+def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
     global N_DEATH_TIMING_TESTS
     global LONG_TEST_LENGTH
 
@@ -267,13 +271,13 @@ def socrates(bin_path, test_mode=None, no_death_timing=None):
     print_test_description()
     Path("./test_output/").mkdir(parents=True, exist_ok=True)
 
-    if os.path.isfile(f"{bin_path}/philo_one/philo_one"):
+    if os.path.isfile(f"{bin_path}/philo_one/philo_one") and (philo_num == 0 or philo_num == 1):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_ONE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_one/philo_one")
-    if os.path.isfile(f"{bin_path}/philo_two/philo_two"):
+    if os.path.isfile(f"{bin_path}/philo_two/philo_two") and (philo_num == 0 or philo_num == 2):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_TWO ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_two/philo_two")
-    if os.path.isfile(f"{bin_path}/philo_three/philo_three"):
+    if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (philo_num == 0 or philo_num == 3):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_three/philo_three")
     if FAIL == 1:
@@ -283,10 +287,20 @@ def socrates(bin_path, test_mode=None, no_death_timing=None):
 
 
 if __name__ == "__main__":
-    argc = len(sys.argv)
-    if argc > 1 and argc < 3:
-        bin_path = sys.argv[1]
-    elif argc > 3 or argc == 1:
-        print(f"Usage: {sys.argv[0]} <path to project folder>")
-        exit(1)
-    exit(socrates(bin_path))
+    parser = argparse.ArgumentParser(description="Test for the philosophers project")
+    parser.add_argument(
+        "-p", "--philo",
+        help=textwrap.dedent("""\
+            Number of the philosopher program to test
+             - 1: philo_one
+             - 2: philo_two
+             - 3: philo_three
+             - 0: all programs (default)
+        """),
+        type=int,
+        choices=[0, 1, 2, 3],
+        default=0
+    )
+    parser.add_argument("path", help="path to project folder")
+    args = parser.parse_args()
+    exit(socrates(args.path, args.philo))
