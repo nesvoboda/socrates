@@ -305,4 +305,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("path", help="path to project folder")
     args = parser.parse_args()
-    exit(socrates(args.path, args.philo))
+    try:
+        exit(socrates(args.path, args.philo))
+    except KeyboardInterrupt:
+        pass
