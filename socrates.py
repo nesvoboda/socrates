@@ -15,38 +15,7 @@ from tqdm import tqdm
 import signal
 from delay_o_meter import measure
 
-# How many 'long' tests are needed
-N_LONG_TESTS = 3
-
-# How many seconds must a program run uninterrupted
-LONG_TEST_LENGTH = 40
-
-# The test that will be used for an even number of philosophers
-EVEN_NUMBER_TEST = "4 311 150 150"
-
-# The test that will be used for and odd number of philosophers
-ODD_NUMBER_TEST = "5 600 150 150"
-
-# The test that will be used for the death timing tests
-DEATH_TIMING_TEST = "3 310 200 100"
-
-# The death timing target (a philosopher should ideally die at this moment)
-DEATH_TIMING_OPTIMUM = 310
-
-N_DEATH_TIMING_TESTS = 10
-
-# The regexp that matches the character that separates your
-# timestamp from your status messages. This is needed to parse your death timing.
-# The default is "any whitespace", which will match both
-# 000000310\t1 died
-# and
-# 000000310 1 died
-SEPARATOR_REGEXP = r"\s"
-
-CPU_COUNT = psutil.cpu_count()
-
-FAIL = 0
-
+import config
 
 class bcolors:
     HEADER = "\033[95m"
@@ -65,7 +34,7 @@ class bcolors:
 def cpu_overloaded():
     if psutil.cpu_percent() > 50:
         return True
-    if psutil.getloadavg()[1] / CPU_COUNT > 1:
+    if psutil.getloadavg()[1] / config.CPU_COUNT > 1:
         return True
 
 
@@ -94,7 +63,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
     for _ in tqdm(range(seconds)):
         if not slept < seconds:
             break
-        sleep(1)
+        sleep(0.3)
         slept += 1
         if not cpu_warning_issued and cpu_overloaded():
             print(
@@ -143,29 +112,29 @@ def measure_starvation_timing(binary, array):
 
 
 def run_long_test(binary, test, test_name):
-    global FAIL
-    for i in range(0, N_LONG_TESTS):
+    # global FAIL
+    for i in range(0, config.N_LONG_TESTS):
         res = assert_runs_for_at_least(
-            f"{binary} {test}", LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
+            f"{binary} {test}", config.LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
         )
         processes_still_running(binary)
         if res is False:
             print(f"\n\n ❌ {binary} failed test {test}")
-            FAIL = 1
+            config.FAIL = 1
             return False
     print(f"\n\n✅  Pass!\n")
     return True
 
 
 def run_starvation_measures(binary):
-    global FAIL
+    # global FAIL
     results = []
-    for i in range(N_DEATH_TIMING_TESTS):
+    for i in range(config.N_DEATH_TIMING_TESTS):
         measure_starvation_timing(binary, results)
         processes_still_running(binary)
         if results[-1] > 10:
             print(f"\n\n ❌ {binary} failed death timing test :(")
-            FAIL = 1
+            config.FAIL = 1
             return False
         else:
             print(
@@ -173,18 +142,18 @@ def run_starvation_measures(binary):
                 end="",
                 flush=True,
             )
-    if N_DEATH_TIMING_TESTS > 0:
+    if config.N_DEATH_TIMING_TESTS > 0:
         print(f"\n\n✅  Average delay: {mean(results)} ms!\n\n")
     return True
 
 
 def test_program(binary):
     print(f"\n{bcolors.BOLD}PERFORMANCE{bcolors.ENDC}\n")
-    print(f"{bcolors.WARNING}{EVEN_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
-    if run_long_test(binary, EVEN_NUMBER_TEST, "performance_1") is False:
+    print(f"{bcolors.WARNING}{config.EVEN_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
+    if run_long_test(binary, config.EVEN_NUMBER_TEST, "performance_1") is False:
         return False
-    print(f"{bcolors.WARNING}{ODD_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
-    if run_long_test(binary, ODD_NUMBER_TEST, "performance_2") is False:
+    print(f"{bcolors.WARNING}{config.ODD_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
+    if run_long_test(binary, config.ODD_NUMBER_TEST, "performance_2") is False:
         return False
     print(f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n")
     if run_starvation_measures(binary) is False:
@@ -211,9 +180,9 @@ def print_test_description():
     print(
         f"\n{bcolors.BOLD}PERFORMANCE.{bcolors.ENDC}\n\n"
         "In these tests, philosophers must not die.\n"
-        f"We will run each of the tests {N_LONG_TESTS} times.\n"
+        f"We will run each of the tests {config.N_LONG_TESTS} times.\n"
         "Test will pass, if your program runs for more than\n"
-        f"{LONG_TEST_LENGTH} seconds every time."
+        f"{config.LONG_TEST_LENGTH} seconds every time."
     )
     print(
         f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n\n"
@@ -226,7 +195,7 @@ def print_test_description():
     )
     print(
         f"\n{bcolors.FAIL}{bcolors.BOLD}WARNING: THIS TEST WILL TAKE AT LEAST\n"
-        f"{bcolors.ENDC}{bcolors.FAIL}{LONG_TEST_LENGTH * 6 * N_LONG_TESTS}"
+        f"{bcolors.ENDC}{bcolors.FAIL}{config.LONG_TEST_LENGTH * 6 * config.N_LONG_TESTS}"
         " SECONDS.\n\nFAILING THIS TEST != A BAD PROJECT\n"
         "PASSING THIS TEST != A GOOD ONE\n"
         f"MAKE YOUR OWN DECISIONS{bcolors.ENDC}\n"
@@ -254,14 +223,14 @@ def measure_system_delay():
 
 
 def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
-    global N_DEATH_TIMING_TESTS
-    global LONG_TEST_LENGTH
+    # global N_DEATH_TIMING_TESTS
+    # global LONG_TEST_LENGTH
 
     if test_mode:
-        LONG_TEST_LENGTH = 1
-        N_DEATH_TIMING_TESTS = 1
+        config.LONG_TEST_LENGTH = 1
+        config.N_DEATH_TIMING_TESTS = 1
     if no_death_timing:
-        N_DEATH_TIMING_TESTS = 0
+        config.N_DEATH_TIMING_TESTS = 0
 
     print(f"\n{bcolors.OKBLUE}-- DELAY-O-METER ---{bcolors.ENDC} \n")
     measure_system_delay()
