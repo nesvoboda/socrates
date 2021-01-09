@@ -91,10 +91,10 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
 
 def measure_starvation_timing(binary, array):
     # Run a philosopher binary with deadly parameters
-    data = subprocess.getoutput(f"{binary} {DEATH_TIMING_TEST}")
+    data = subprocess.getoutput(f"{binary} {config.DEATH_TIMING_TEST}")
     if data[-1] == "\0":
         data = data[:-2]
-    pattern = re.compile(SEPARATOR_REGEXP)
+    pattern = re.compile(config.SEPARATOR_REGEXP)
     # Get the start time
     first_line = data[: data.find("\n")]
 
@@ -106,13 +106,12 @@ def measure_starvation_timing(binary, array):
 
     separator_index = pattern.search(last_line).start()
     death_time = int(last_line[:separator_index].strip("\0"))
-    result = abs(death_time - start_time - DEATH_TIMING_OPTIMUM)
+    result = abs(death_time - start_time - config.DEATH_TIMING_OPTIMUM)
     # Append the delay to the array of results
     array.append(result)
 
 
 def run_long_test(binary, test, test_name):
-    # global FAIL
     for i in range(0, config.N_LONG_TESTS):
         res = assert_runs_for_at_least(
             f"{binary} {test}", config.LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
@@ -127,7 +126,6 @@ def run_long_test(binary, test, test_name):
 
 
 def run_starvation_measures(binary):
-    # global FAIL
     results = []
     for i in range(config.N_DEATH_TIMING_TESTS):
         measure_starvation_timing(binary, results)
@@ -223,9 +221,6 @@ def measure_system_delay():
 
 
 def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
-    # global N_DEATH_TIMING_TESTS
-    # global LONG_TEST_LENGTH
-
     if test_mode:
         config.LONG_TEST_LENGTH = 1
         config.N_DEATH_TIMING_TESTS = 1
@@ -251,14 +246,17 @@ def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
     if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (philo_num == 0 or philo_num == 3):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_three/philo_three")
-    if FAIL == 1:
+    if config.FAIL == 1:
         return 1
     else:
         return 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Test for the philosophers project")
+    parser = argparse.ArgumentParser(
+        description="Test for the philosophers project",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument(
         "-p", "--philo",
         help=textwrap.dedent("""\
@@ -272,8 +270,13 @@ if __name__ == "__main__":
         choices=[0, 1, 2, 3],
         default=0
     )
+    parser.add_argument("-n", default=config.N_LONG_TESTS, type=int, help="number of long test")
+    parser.add_argument("-t", default=config.LONG_TEST_LENGTH, type=int, help="long test time")
     parser.add_argument("path", help="path to project folder")
+
     args = parser.parse_args()
+    config.N_LONG_TESTS = args.n
+    config.LONG_TEST_LENGTH = args.t
     try:
         exit(socrates(args.path, args.philo))
     except KeyboardInterrupt:
