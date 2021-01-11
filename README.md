@@ -50,7 +50,7 @@ Here's an [article](https://www.notion.so/philosophers-VM-c60be9c836084edfbcd9c0
 
 ## Installation
 
-Requirements: python 3
+Requirements: python 3.6
 
 1. Clone the repo
 ```
@@ -61,13 +61,13 @@ cd socrates
 2. Install the prerequisites
 
 ```
-pip3 install psutil
+pip3 install -r requirements.txt
 ```
 
 If you're in a 42 campus, run this instead:
 
 ```
-python3 -m pip install psutil --user
+python3 -m pip install -r requirements.txt --user
 ```
 
 ## Configuration

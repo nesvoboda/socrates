@@ -11,41 +11,11 @@ import threading
 from pathlib import Path
 import re
 import psutil
+from tqdm import tqdm
 import signal
 from delay_o_meter import measure
 
-# How many 'long' tests are needed
-N_LONG_TESTS = 3
-
-# How many seconds must a program run uninterrupted
-LONG_TEST_LENGTH = 40
-
-# The test that will be used for an even number of philosophers
-EVEN_NUMBER_TEST = "4 311 150 150"
-
-# The test that will be used for and odd number of philosophers
-ODD_NUMBER_TEST = "5 600 150 150"
-
-# The test that will be used for the death timing tests
-DEATH_TIMING_TEST = "3 310 200 100"
-
-# The death timing target (a philosopher should ideally die at this moment)
-DEATH_TIMING_OPTIMUM = 310
-
-N_DEATH_TIMING_TESTS = 10
-
-# The regexp that matches the character that separates your
-# timestamp from your status messages. This is needed to parse your death timing.
-# The default is "any whitespace", which will match both
-# 000000310\t1 died
-# and
-# 000000310 1 died
-SEPARATOR_REGEXP = r"\s"
-
-CPU_COUNT = psutil.cpu_count()
-
-FAIL = 0
-
+import config
 
 class bcolors:
     HEADER = "\033[95m"
@@ -64,7 +34,7 @@ class bcolors:
 def cpu_overloaded():
     if psutil.cpu_percent() > 50:
         return True
-    if psutil.getloadavg()[1] / CPU_COUNT > 1:
+    if psutil.getloadavg()[1] / config.CPU_COUNT > 1:
         return True
 
 
@@ -90,8 +60,10 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
     # Wait for some time
     code = process.poll()
     slept = 0
-    while slept < seconds:
-        sleep(1)
+    for _ in tqdm(range(seconds)):
+        if not slept < seconds:
+            break
+        sleep(0.3)
         slept += 1
         if not cpu_warning_issued and cpu_overloaded():
             print(
@@ -111,7 +83,6 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         process.kill()
         process.poll()
         f.close()
-        print(f"{bcolors.OKGREEN}[{seconds} SEC] {bcolors.ENDC}", end="", flush=True)
         return True
     # If the process isn't running anymore, the test has failed
     f.close()
@@ -120,10 +91,10 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
 
 def measure_starvation_timing(binary, array):
     # Run a philosopher binary with deadly parameters
-    data = subprocess.getoutput(f"{binary} {DEATH_TIMING_TEST}")
+    data = subprocess.getoutput(f"{binary} {config.DEATH_TIMING_TEST}")
     if data[-1] == "\0":
         data = data[:-2]
-    pattern = re.compile(SEPARATOR_REGEXP)
+    pattern = re.compile(config.SEPARATOR_REGEXP)
     # Get the start time
     first_line = data[: data.find("\n")]
 
@@ -135,35 +106,33 @@ def measure_starvation_timing(binary, array):
 
     separator_index = pattern.search(last_line).start()
     death_time = int(last_line[:separator_index].strip("\0"))
-    result = abs(death_time - start_time - DEATH_TIMING_OPTIMUM)
+    result = abs(death_time - start_time - config.DEATH_TIMING_OPTIMUM)
     # Append the delay to the array of results
     array.append(result)
 
 
 def run_long_test(binary, test, test_name):
-    global FAIL
-    for i in range(0, N_LONG_TESTS):
+    for i in range(0, config.N_LONG_TESTS):
         res = assert_runs_for_at_least(
-            f"{binary} {test}", LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
+            f"{binary} {test}", config.LONG_TEST_LENGTH, binary, f"{test_name}_{i}"
         )
         processes_still_running(binary)
         if res is False:
             print(f"\n\n ❌ {binary} failed test {test}")
-            FAIL = 1
+            config.FAIL = 1
             return False
     print(f"\n\n✅  Pass!\n")
     return True
 
 
 def run_starvation_measures(binary):
-    global FAIL
     results = []
-    for i in range(N_DEATH_TIMING_TESTS):
+    for i in range(config.N_DEATH_TIMING_TESTS):
         measure_starvation_timing(binary, results)
         processes_still_running(binary)
         if results[-1] > 10:
             print(f"\n\n ❌ {binary} failed death timing test :(")
-            FAIL = 1
+            config.FAIL = 1
             return False
         else:
             print(
@@ -171,18 +140,18 @@ def run_starvation_measures(binary):
                 end="",
                 flush=True,
             )
-    if N_DEATH_TIMING_TESTS > 0:
+    if config.N_DEATH_TIMING_TESTS > 0:
         print(f"\n\n✅  Average delay: {mean(results)} ms!\n\n")
     return True
 
 
 def test_program(binary):
     print(f"\n{bcolors.BOLD}PERFORMANCE{bcolors.ENDC}\n")
-    print(f"{bcolors.WARNING}{EVEN_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
-    if run_long_test(binary, EVEN_NUMBER_TEST, "performance_1") is False:
+    print(f"{bcolors.WARNING}{config.EVEN_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
+    if run_long_test(binary, config.EVEN_NUMBER_TEST, "performance_1") is False:
         return False
-    print(f"{bcolors.WARNING}{ODD_NUMBER_TEST}{bcolors.ENDC}     ", end="", flush=True)
-    if run_long_test(binary, ODD_NUMBER_TEST, "performance_2") is False:
+    print(f"{bcolors.WARNING}{config.ODD_NUMBER_TEST}{bcolors.ENDC}     ", flush=True)
+    if run_long_test(binary, config.ODD_NUMBER_TEST, "performance_2") is False:
         return False
     print(f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n")
     if run_starvation_measures(binary) is False:
@@ -209,9 +178,9 @@ def print_test_description():
     print(
         f"\n{bcolors.BOLD}PERFORMANCE.{bcolors.ENDC}\n\n"
         "In these tests, philosophers must not die.\n"
-        f"We will run each of the tests {N_LONG_TESTS} times.\n"
+        f"We will run each of the tests {config.N_LONG_TESTS} times.\n"
         "Test will pass, if your program runs for more than\n"
-        f"{LONG_TEST_LENGTH} seconds every time."
+        f"{config.LONG_TEST_LENGTH} seconds every time."
     )
     print(
         f"\n{bcolors.BOLD}DEATH TIMING{bcolors.ENDC}\n\n"
@@ -224,7 +193,7 @@ def print_test_description():
     )
     print(
         f"\n{bcolors.FAIL}{bcolors.BOLD}WARNING: THIS TEST WILL TAKE AT LEAST\n"
-        f"{bcolors.ENDC}{bcolors.FAIL}{LONG_TEST_LENGTH * 6 * N_LONG_TESTS}"
+        f"{bcolors.ENDC}{bcolors.FAIL}{config.LONG_TEST_LENGTH * 6 * config.N_LONG_TESTS}"
         " SECONDS.\n\nFAILING THIS TEST != A BAD PROJECT\n"
         "PASSING THIS TEST != A GOOD ONE\n"
         f"MAKE YOUR OWN DECISIONS{bcolors.ENDC}\n"
@@ -252,14 +221,11 @@ def measure_system_delay():
 
 
 def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
-    global N_DEATH_TIMING_TESTS
-    global LONG_TEST_LENGTH
-
     if test_mode:
-        LONG_TEST_LENGTH = 1
-        N_DEATH_TIMING_TESTS = 1
+        config.LONG_TEST_LENGTH = 1
+        config.N_DEATH_TIMING_TESTS = 1
     if no_death_timing:
-        N_DEATH_TIMING_TESTS = 0
+        config.N_DEATH_TIMING_TESTS = 0
 
     print(f"\n{bcolors.OKBLUE}-- DELAY-O-METER ---{bcolors.ENDC} \n")
     measure_system_delay()
@@ -280,14 +246,17 @@ def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
     if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (philo_num == 0 or philo_num == 3):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_three/philo_three")
-    if FAIL == 1:
+    if config.FAIL == 1:
         return 1
     else:
         return 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Test for the philosophers project")
+    parser = argparse.ArgumentParser(
+        description="Test for the philosophers project",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument(
         "-p", "--philo",
         help=textwrap.dedent("""\
@@ -301,6 +270,14 @@ if __name__ == "__main__":
         choices=[0, 1, 2, 3],
         default=0
     )
+    parser.add_argument("-n", default=config.N_LONG_TESTS, type=int, help="number of long test")
+    parser.add_argument("-t", default=config.LONG_TEST_LENGTH, type=int, help="long test time")
     parser.add_argument("path", help="path to project folder")
+
     args = parser.parse_args()
-    exit(socrates(args.path, args.philo))
+    config.N_LONG_TESTS = args.n
+    config.LONG_TEST_LENGTH = args.t
+    try:
+        exit(socrates(args.path, args.philo))
+    except KeyboardInterrupt:
+        pass
