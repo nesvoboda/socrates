@@ -9,7 +9,13 @@ A small testing framework for 42's philosophers.
 
 **New**: now includes Delay-o-meter, a tool to measure sleep inaccuracy
 
-_Big thanks to [solaldunckel](https://github.com/solaldunckel) for helping to test this project!_
+#### Acknowledgements
+Big thanks to:
+
+[solaldunckel](https://github.com/solaldunckel) for helping to test this project!
+
+[cacharle](https://github.com/cacharle) for their awesome pull requests that are pushing this project forward!
+
 
 ### What are the tests?
 
