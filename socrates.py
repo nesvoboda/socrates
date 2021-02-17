@@ -104,6 +104,7 @@ def parse_death_line(line):
 def measure_starvation_timing(binary):
     # Run a philosopher binary with deadly parameters
     data = subprocess.getoutput(f"{binary} {config.DEATH_TIMING_TEST}")
+    print(data)
     if data[-1] == "\0":
         data = data[:-2]
     pattern = re.compile(config.SEPARATOR_REGEXP)
