@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 import subprocess
 import argparse
@@ -14,6 +13,7 @@ from tqdm import tqdm
 from delay_o_meter import measure
 
 import config
+
 
 class bcolors:
     HEADER = "\033[95m"
@@ -40,7 +40,7 @@ def cpu_overloaded():
 # (this sometimes happens with philo_three)
 def processes_still_running(binary):
     try:
-        executable = binary[binary.rfind("/") + 1 :]
+        executable = binary[binary.rfind("/") + 1:]
     except Exception:
         executable = binary
     procs = psutil.process_iter(["name", "status", "pid"])
@@ -87,7 +87,21 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
     return False
 
 
-def measure_starvation_timing(binary, array):
+def parse_death_line(line):
+    """
+    Parse the last line printed by a philosopher binary, returning the
+    death time.
+    Ex.:
+    00000100 3 died
+    should return 100.
+    """
+    pattern = re.compile(config.SEPARATOR_REGEXP)
+    separator_index = pattern.search(line).start()
+    death_time = int(line[:separator_index].strip("\0"))
+    return death_time
+
+
+def measure_starvation_timing(binary):
     # Run a philosopher binary with deadly parameters
     data = subprocess.getoutput(f"{binary} {config.DEATH_TIMING_TEST}")
     if data[-1] == "\0":
@@ -100,13 +114,14 @@ def measure_starvation_timing(binary, array):
     start_time = int(first_line[:separator_index])
 
     # Get the time of death
-    last_line = data[data.rfind("\n") + 1 :]
+    last_line = data[data.rfind("\n") + 1:]
 
     separator_index = pattern.search(last_line).start()
-    death_time = int(last_line[:separator_index].strip("\0"))
+    death_time = parse_death_line(last_line)
     result = abs(death_time - start_time - config.DEATH_TIMING_OPTIMUM)
     # Append the delay to the array of results
-    array.append(result)
+    # array.append(result)
+    return result
 
 
 def run_long_test(binary, test, test_name):
@@ -126,7 +141,7 @@ def run_long_test(binary, test, test_name):
 def run_starvation_measures(binary):
     results = []
     for i in range(config.N_DEATH_TIMING_TESTS):
-        measure_starvation_timing(binary, results)
+        results.append(measure_starvation_timing(binary))
         processes_still_running(binary)
         if results[-1] > 10:
             print(f"\n\n ❌ {binary} failed death timing test :(")
