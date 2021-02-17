@@ -1,4 +1,5 @@
-from socrates import parse_death_line, measure_starvation_timing
+from socrates import (
+    parse_death_line, measure_starvation_timing, run_starvation_measures)
 
 
 def test_parse_death_line():
@@ -7,3 +8,6 @@ def test_parse_death_line():
 
 def test_measure_starvation_timing():
     assert measure_starvation_timing("./tests/death_timing_positive.py") == 5
+
+def test_run_starvation_measures():
+    assert run_starvation_measures("./tests/death_timing_positive.py") == True
