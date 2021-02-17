@@ -7,12 +7,10 @@ import argparse
 import textwrap
 from time import sleep
 from statistics import mean
-import threading
 from pathlib import Path
 import re
 import psutil
 from tqdm import tqdm
-import signal
 from delay_o_meter import measure
 
 import config
