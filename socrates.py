@@ -12,7 +12,12 @@ import psutil
 from tqdm import tqdm
 from delay_o_meter import measure
 
-import config
+import sys
+
+if "pytest" in sys.modules:
+    import test_config as config
+else:
+    import config
 
 
 class bcolors:
@@ -52,9 +57,9 @@ def processes_still_running(binary):
 
 def assert_runs_for_at_least(command, seconds, binary, test_name):
     # Run a given command
-    f = open(f"./test_output/{binary[binary.rfind('/'):]}_{test_name}_out.txt", "w")
+    # f = open(f"./test_output/{binary[binary.rfind('/'):]}_{test_name}_out.txt", "w")
     cpu_warning_issued = 0
-    process = subprocess.Popen(command, stdout=f, shell=True)
+    process = subprocess.Popen(command, stdout=subprocess.DEVNULL, shell=True)
     # Wait for some time
     code = process.poll()
     slept = 0
@@ -72,7 +77,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         code = process.poll()
         # Exit immediately, if the process has died
         if code is not None:
-            f.close()
+            # f.close()
             return False
 
     code = process.poll()
@@ -80,10 +85,10 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         # If the process is still running, the test has passed
         process.kill()
         process.poll()
-        f.close()
+        # f.close()
         return True
     # If the process isn't running anymore, the test has failed
-    f.close()
+    # f.close()
     return False
 
 
