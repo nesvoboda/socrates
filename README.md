@@ -56,7 +56,7 @@ Here's an [article](https://www.notion.so/philosophers-VM-c60be9c836084edfbcd9c0
 
 ## Installation
 
-Requirements: python 3.6
+Requirements: python 3.6+, [psutil](https://github.com/giampaolo/psutil/blob/master/INSTALL.rst)
 
 1. Clone the repo
 ```
@@ -75,6 +75,14 @@ If you're in a 42 campus, run this instead:
 ```
 python3 -m pip install -r requirements.txt --user
 ```
+
+If installation fails on Linux, try this:
+
+```
+sudo apt-get install python3.7-dev
+```
+Thanks to [Mazoise](https://github.com/Mazoise) for this suggestion!
+
 
 ## Configuration
 
