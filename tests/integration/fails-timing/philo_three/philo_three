@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+
+"""
+This is a very cynical imitation of a Philosopher program. It detects
+long tests and death timing tests specified in test_config.py and fails the
+death timing test
+"""
+
+import sys
+from time import sleep
+
+if len(sys.argv) != 5:
+    exit(-1)
+
+if int(sys.argv[1]) == 4 or int(sys.argv[1]) == 5:
+    # This is a long test
+    print("000005 3 whatever")
+    sleep(45)
+    print("00042" + " 3 died")
+    exit(0)
+
+
+# This is death time test imitation
+print("000005 3 whatever")
+
+death_time = int(sys.argv[2])
+death_time += 20
+
+print("000" + death_time + " 3 died")

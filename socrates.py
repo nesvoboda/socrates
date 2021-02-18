@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 import subprocess
 import argparse
 import textwrap
 from time import sleep
 from statistics import mean
-import threading
 from pathlib import Path
 import re
 import psutil
 from tqdm import tqdm
-import signal
 from delay_o_meter import measure
 
-import config
+import sys
+
+if "pytest" in sys.modules or "PHILO_TEST" in os.environ:
+    import test_config as config
+else:
+    import config
+
 
 class bcolors:
     HEADER = "\033[95m"
@@ -54,9 +57,9 @@ def processes_still_running(binary):
 
 def assert_runs_for_at_least(command, seconds, binary, test_name):
     # Run a given command
-    f = open(f"./test_output/{binary[binary.rfind('/'):]}_{test_name}_out.txt", "w")
+    # f = open(f"./test_output/{binary[binary.rfind('/'):]}_{test_name}_out.txt", "w")
     cpu_warning_issued = 0
-    process = subprocess.Popen(command, stdout=f, shell=True)
+    process = subprocess.Popen(command, stdout=subprocess.DEVNULL, shell=True)
     # Wait for some time
     code = process.poll()
     slept = 0
@@ -74,7 +77,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         code = process.poll()
         # Exit immediately, if the process has died
         if code is not None:
-            f.close()
+            # f.close()
             return False
 
     code = process.poll()
@@ -82,16 +85,31 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
         # If the process is still running, the test has passed
         process.kill()
         process.poll()
-        f.close()
+        # f.close()
         return True
     # If the process isn't running anymore, the test has failed
-    f.close()
+    # f.close()
     return False
 
 
-def measure_starvation_timing(binary, array):
+def parse_death_line(line):
+    """
+    Parse the last line printed by a philosopher binary, returning the
+    death time.
+    Ex.:
+    00000100 3 died
+    should return 100.
+    """
+    pattern = re.compile(config.SEPARATOR_REGEXP)
+    separator_index = pattern.search(line).start()
+    death_time = int(line[:separator_index].strip("\0"))
+    return death_time
+
+
+def measure_starvation_timing(binary):
     # Run a philosopher binary with deadly parameters
     data = subprocess.getoutput(f"{binary} {config.DEATH_TIMING_TEST}")
+    print(data)
     if data[-1] == "\0":
         data = data[:-2]
     pattern = re.compile(config.SEPARATOR_REGEXP)
@@ -105,10 +123,11 @@ def measure_starvation_timing(binary, array):
     last_line = data[data.rfind("\n") + 1 :]
 
     separator_index = pattern.search(last_line).start()
-    death_time = int(last_line[:separator_index].strip("\0"))
+    death_time = parse_death_line(last_line)
     result = abs(death_time - start_time - config.DEATH_TIMING_OPTIMUM)
     # Append the delay to the array of results
-    array.append(result)
+    # array.append(result)
+    return result
 
 
 def run_long_test(binary, test, test_name):
@@ -128,7 +147,7 @@ def run_long_test(binary, test, test_name):
 def run_starvation_measures(binary):
     results = []
     for i in range(config.N_DEATH_TIMING_TESTS):
-        measure_starvation_timing(binary, results)
+        results.append(measure_starvation_timing(binary))
         processes_still_running(binary)
         if results[-1] > 10:
             print(f"\n\n ❌ {binary} failed death timing test :(")
@@ -220,12 +239,7 @@ def measure_system_delay():
         sleep(5)
 
 
-def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
-    if test_mode:
-        config.LONG_TEST_LENGTH = 1
-        config.N_DEATH_TIMING_TESTS = 1
-    if no_death_timing:
-        config.N_DEATH_TIMING_TESTS = 0
+def socrates(bin_path, philo_num):
 
     print(f"\n{bcolors.OKBLUE}-- DELAY-O-METER ---{bcolors.ENDC} \n")
     measure_system_delay()
@@ -237,13 +251,19 @@ def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
     print_test_description()
     Path("./test_output/").mkdir(parents=True, exist_ok=True)
 
-    if os.path.isfile(f"{bin_path}/philo_one/philo_one") and (philo_num == 0 or philo_num == 1):
+    if os.path.isfile(f"{bin_path}/philo_one/philo_one") and (
+        philo_num == 0 or philo_num == 1
+    ):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_ONE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_one/philo_one")
-    if os.path.isfile(f"{bin_path}/philo_two/philo_two") and (philo_num == 0 or philo_num == 2):
+    if os.path.isfile(f"{bin_path}/philo_two/philo_two") and (
+        philo_num == 0 or philo_num == 2
+    ):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_TWO ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_two/philo_two")
-    if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (philo_num == 0 or philo_num == 3):
+    if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (
+        philo_num == 0 or philo_num == 3
+    ):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_three/philo_three")
     if config.FAIL == 1:
@@ -255,23 +275,30 @@ def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Test for the philosophers project",
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        "-p", "--philo",
-        help=textwrap.dedent("""\
+        "-p",
+        "--philo",
+        help=textwrap.dedent(
+            """\
             Number of the philosopher program to test
              - 1: philo_one
              - 2: philo_two
              - 3: philo_three
              - 0: all programs (default)
-        """),
+        """
+        ),
         type=int,
         choices=[0, 1, 2, 3],
-        default=0
+        default=0,
     )
-    parser.add_argument("-n", default=config.N_LONG_TESTS, type=int, help="number of long test")
-    parser.add_argument("-t", default=config.LONG_TEST_LENGTH, type=int, help="long test time")
+    parser.add_argument(
+        "-n", default=config.N_LONG_TESTS, type=int, help="number of long test"
+    )
+    parser.add_argument(
+        "-t", default=config.LONG_TEST_LENGTH, type=int, help="long test time"
+    )
     parser.add_argument("path", help="path to project folder")
 
     args = parser.parse_args()
