@@ -14,7 +14,7 @@ from delay_o_meter import measure
 
 import sys
 
-if "pytest" in sys.modules:
+if "pytest" in sys.modules or "PHILO_TEST" in os.environ:
     import test_config as config
 else:
     import config
@@ -45,7 +45,7 @@ def cpu_overloaded():
 # (this sometimes happens with philo_three)
 def processes_still_running(binary):
     try:
-        executable = binary[binary.rfind("/") + 1:]
+        executable = binary[binary.rfind("/") + 1 :]
     except Exception:
         executable = binary
     procs = psutil.process_iter(["name", "status", "pid"])
@@ -120,7 +120,7 @@ def measure_starvation_timing(binary):
     start_time = int(first_line[:separator_index])
 
     # Get the time of death
-    last_line = data[data.rfind("\n") + 1:]
+    last_line = data[data.rfind("\n") + 1 :]
 
     separator_index = pattern.search(last_line).start()
     death_time = parse_death_line(last_line)
@@ -256,13 +256,19 @@ def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
     print_test_description()
     Path("./test_output/").mkdir(parents=True, exist_ok=True)
 
-    if os.path.isfile(f"{bin_path}/philo_one/philo_one") and (philo_num == 0 or philo_num == 1):
+    if os.path.isfile(f"{bin_path}/philo_one/philo_one") and (
+        philo_num == 0 or philo_num == 1
+    ):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_ONE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_one/philo_one")
-    if os.path.isfile(f"{bin_path}/philo_two/philo_two") and (philo_num == 0 or philo_num == 2):
+    if os.path.isfile(f"{bin_path}/philo_two/philo_two") and (
+        philo_num == 0 or philo_num == 2
+    ):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_TWO ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_two/philo_two")
-    if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (philo_num == 0 or philo_num == 3):
+    if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (
+        philo_num == 0 or philo_num == 3
+    ):
         print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
         test_program(f"{bin_path}/philo_three/philo_three")
     if config.FAIL == 1:
@@ -274,23 +280,30 @@ def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Test for the philosophers project",
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        "-p", "--philo",
-        help=textwrap.dedent("""\
+        "-p",
+        "--philo",
+        help=textwrap.dedent(
+            """\
             Number of the philosopher program to test
              - 1: philo_one
              - 2: philo_two
              - 3: philo_three
              - 0: all programs (default)
-        """),
+        """
+        ),
         type=int,
         choices=[0, 1, 2, 3],
-        default=0
+        default=0,
     )
-    parser.add_argument("-n", default=config.N_LONG_TESTS, type=int, help="number of long test")
-    parser.add_argument("-t", default=config.LONG_TEST_LENGTH, type=int, help="long test time")
+    parser.add_argument(
+        "-n", default=config.N_LONG_TESTS, type=int, help="number of long test"
+    )
+    parser.add_argument(
+        "-t", default=config.LONG_TEST_LENGTH, type=int, help="long test time"
+    )
     parser.add_argument("path", help="path to project folder")
 
     args = parser.parse_args()
