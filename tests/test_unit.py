@@ -43,3 +43,21 @@ def test_integration_positive():
         "./socrates.py ./tests/integration/positive/", shell=True, env=env
     )
     assert res == 0
+
+
+def test_integration_fails_long():
+    env = os.environ
+    env["PHILO_TEST"] = "True"
+    res = subprocess.call(
+        "./socrates.py ./tests/integration/fails-long/", shell=True, env=env
+    )
+    assert res == 1
+
+
+def test_integration_fails_death_timing():
+    env = os.environ
+    env["PHILO_TEST"] = "True"
+    res = subprocess.call(
+        "./socrates.py ./tests/integration/fails-timing/", shell=True, env=env
+    )
+    assert res == 1

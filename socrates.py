@@ -239,12 +239,7 @@ def measure_system_delay():
         sleep(5)
 
 
-def socrates(bin_path, philo_num, test_mode=None, no_death_timing=None):
-    if test_mode:
-        config.LONG_TEST_LENGTH = 1
-        config.N_DEATH_TIMING_TESTS = 1
-    if no_death_timing:
-        config.N_DEATH_TIMING_TESTS = 0
+def socrates(bin_path, philo_num):
 
     print(f"\n{bcolors.OKBLUE}-- DELAY-O-METER ---{bcolors.ENDC} \n")
     measure_system_delay()
