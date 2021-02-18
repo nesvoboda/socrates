@@ -3,7 +3,8 @@
 
 # socrates
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
+![Run tests](https://github.com/nesvoboda/socrates/workflows/Run%20tests/badge.svg)
+[![codecov](https://codecov.io/gh/nesvoboda/socrates/branch/master/graph/badge.svg?token=NB9C6688R1)](https://codecov.io/gh/nesvoboda/socrates)
 
 A small testing framework for 42's philosophers.
 
