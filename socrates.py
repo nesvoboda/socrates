@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import shlex
 import argparse
 import textwrap
 from time import sleep
@@ -48,9 +49,9 @@ def processes_still_running(binary):
         executable = binary[binary.rfind("/") + 1 :]
     except Exception:
         executable = binary
-    procs = psutil.process_iter(["name", "status", "pid"])
+    procs = psutil.process_iter(["name"])
     for proc in procs:
-        if proc.info["name"] == executable and proc.info["status"] == "running":
+        if proc.info["name"] == executable:
             proc.terminate()
             proc.wait()
 
@@ -59,7 +60,7 @@ def assert_runs_for_at_least(command, seconds, binary, test_name):
     # Run a given command
     # f = open(f"./test_output/{binary[binary.rfind('/'):]}_{test_name}_out.txt", "w")
     cpu_warning_issued = 0
-    process = subprocess.Popen(command, stdout=subprocess.DEVNULL, shell=True)
+    process = subprocess.Popen(shlex.split(command), stdout=subprocess.DEVNULL)
     # Wait for some time
     code = process.poll()
     slept = 0
