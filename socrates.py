@@ -189,9 +189,8 @@ def cpu_warning():
 
 
 def make_all_binaries(bin_path):
-    subprocess.run(["make", "-C", f"{bin_path}/philo_one/"])
-    subprocess.run(["make", "-C", f"{bin_path}/philo_two/"])
-    subprocess.run(["make", "-C", f"{bin_path}/philo_three/"])
+    subprocess.run(["make", "-C", f"{bin_path}/philo/"])
+    subprocess.run(["make", "-C", f"{bin_path}/philo_bonus/"])
 
 
 def print_test_description():
@@ -252,21 +251,16 @@ def socrates(bin_path, philo_num):
     print_test_description()
     Path("./test_output/").mkdir(parents=True, exist_ok=True)
 
-    if os.path.isfile(f"{bin_path}/philo_one/philo_one") and (
+    if os.path.isfile(f"{bin_path}/philo/philo") and (
         philo_num == 0 or philo_num == 1
     ):
-        print(f"\n{bcolors.OKBLUE}---------- PHILO_ONE ----------{bcolors.ENDC}\n")
-        test_program(f"{bin_path}/philo_one/philo_one")
-    if os.path.isfile(f"{bin_path}/philo_two/philo_two") and (
+        print(f"\n{bcolors.OKBLUE}---------- PHILO ----------------{bcolors.ENDC}\n")
+        test_program(f"{bin_path}/philo/philo")
+    if os.path.isfile(f"{bin_path}/philo_bonus/philo_bonus") and (
         philo_num == 0 or philo_num == 2
     ):
-        print(f"\n{bcolors.OKBLUE}---------- PHILO_TWO ----------{bcolors.ENDC}\n")
-        test_program(f"{bin_path}/philo_two/philo_two")
-    if os.path.isfile(f"{bin_path}/philo_three/philo_three") and (
-        philo_num == 0 or philo_num == 3
-    ):
-        print(f"\n{bcolors.OKBLUE}---------- PHILO_THREE ----------{bcolors.ENDC}\n")
-        test_program(f"{bin_path}/philo_three/philo_three")
+        print(f"\n{bcolors.OKBLUE}---------- PHILO_BONUS ----------{bcolors.ENDC}\n")
+        test_program(f"{bin_path}/philo_bonus/philo_bonus")
     if config.FAIL == 1:
         return 1
     else:
@@ -284,14 +278,13 @@ if __name__ == "__main__":
         help=textwrap.dedent(
             """\
             Number of the philosopher program to test
-             - 1: philo_one
-             - 2: philo_two
-             - 3: philo_three
+             - 1: philo
+             - 2: philo_bonus
              - 0: all programs (default)
         """
         ),
         type=int,
-        choices=[0, 1, 2, 3],
+        choices=[0, 1, 2],
         default=0,
     )
     parser.add_argument(
